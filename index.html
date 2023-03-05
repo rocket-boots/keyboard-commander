@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>Keyboard Commander Test</title>
+		<style>
+			body {
+				background: #664455;
+				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			}
+			main {
+				display: flex;
+				flex-direction: column;
+				padding-bottom: 40vh;
+			}
+			.sections {
+				display: flex;
+				flex-wrap: wrap;
+			}
+			section {
+				width: 40%;
+			}
+			#mapping {
+				width: 20em;
+				height: 20em;
+				border: solid 1px white;
+				background: black;
+				color: white;
+				font-family: 'Courier New', Courier, monospace;
+			}
+			#command {
+				padding: 1em;
+				font-size: 300%;
+				background: rgba(255, 255, 255, 0.5);
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>KeyBoardCommander Example</h1>
+			<div class="sections">
+				<section>
+					<h1>Key-Command Mapping</h1>
+					<p>
+						Modify in the text area below, with valid JSON only.
+					</p>
+					<textarea id="mapping">{
+						"w": "go up",
+						"a": "go left",
+						"s": "go down",
+						"d": "go right",
+						"Tab": "open inventory"
+					}
+					</textarea>
+				</section>
+				<section>
+					<h1>Last Key Pressed</h1>
+					<div id="command">None</div>
+				</section>
+				<section>
+					<h1>Commands</h1>
+					<div id="remapping"></div>
+				</section>
+			</div>
+		</main>
+		<script type="module">
+			// UI Functions
+			function getMapping() {
+				const json = document.getElementById('mapping').value;
+				// console.log(json);
+				try {
+					return JSON.parse(json);
+				} catch (err) {
+					console.error(err);
+					return {};
+				}
+			}
+
+			function displayCommand(text) {
+				document.getElementById('command').innerText = text;
+			}
+
+			function displayCommands() {
+				const cmds = kbCommander.getCommands();
+				console.log(cmds);
+				document.getElementById('remapping').innerHTML = `<ul>
+					<li>${cmds.join('</li><li>')}</li>
+				</ul>`;
+			}
+
+			function resetMapping() {
+				kbCommander.setMapping(getMapping());
+				displayCommands();
+			}
+
+			// Setup the commander
+			import KeyboardCommander from './src/KeyboardCommander.js';
+			const kbCommander = new KeyboardCommander(
+				getMapping(),
+				{
+					// Hooks
+					command: displayCommand,
+					missingCommand: (key) => displayCommand(`Missing command for key ${key}`),
+				},
+			);
+
+			// Setup UI
+			window.onload = () => {
+				document.getElementById('mapping').addEventListener('blur', resetMapping);
+				displayCommands();
+			};
+			// Expose to window for testing
+			window.kbCommander = kbCommander;
+		</script>
+	</body>
+</html>
