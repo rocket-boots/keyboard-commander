@@ -1,7 +1,15 @@
 import Observer from './Observer.js';
 
+// Events
 const COMMAND_EVENT = 'command';
 const MISSING_COMMAND_EVENT = 'missingCommand';
+const MOUNT_EVENT = 'mount';
+const UNMOUNT_EVENT = 'unmount';
+const MAPPING_EVENT = 'mapping';
+const ALL_EVENTS = [
+	COMMAND_EVENT, MISSING_COMMAND_EVENT, MOUNT_EVENT, UNMOUNT_EVENT, MAPPING_EVENT,
+];
+// Other constants
 const KEY_EVENT = 'keydown'; // Note that keyPress acts different and doesn't trigger for some keys
 
 class KeyboardCommander extends Observer {
@@ -18,17 +26,20 @@ class KeyboardCommander extends Observer {
 		// Advanced settings
 		this.nodeNamesDontTrigger = ['TEXTAREA', 'INPUT'];
 		this.nodeNamesAllowDefault = ['TEXTAREA', 'INPUT']; // redundant since they won't get triggered
-		// Start it up
-		this.mount();
+		// Start it up - default is to automatically mount
+		if (options.autoMount === undefined || options.autoMount) this.mount();
 	}
 
 	setMapping(mappingParam = {}) {
 		if (typeof mappingParam !== 'object') throw new Error('Invalid type for mapping param');
-		return this.mapping = {...mappingParam};
+		this.mapping = {...mappingParam};
+		this.trigger(MAPPING_EVENT);
+		return this.mapping;
 	}
 
 	mapKey(key, command) {
 		this.mapping[key] = command;
+		this.trigger(MAPPING_EVENT);
 		return true;
 	}
 
@@ -40,15 +51,18 @@ class KeyboardCommander extends Observer {
 	unmapKey(key) {
 		if (this.mapping[key]) return false;
 		delete this.mapping[key];
+		this.trigger(MAPPING_EVENT);
 		return true;
 	}
 
 	mount() {
 		this.document.addEventListener(KEY_EVENT, this.keyPressListener);
+		this.trigger(MOUNT_EVENT);
 	}
 
 	unmount() {
 		this.document.removeEventListener(KEY_EVENT, this.keyPressListener);
+		this.trigger(UNMOUNT_EVENT);
 	}
 
 	handleKeyPress(event) {
@@ -64,7 +78,7 @@ class KeyboardCommander extends Observer {
 	}
 
 	setupEventListeners(listenersObj = {}) {
-		[COMMAND_EVENT, MISSING_COMMAND_EVENT].forEach((eventName) => {
+		ALL_EVENTS.forEach((eventName) => {
 			// Assumes that the value will be a function
 			if (listenersObj[eventName]) this.on(eventName, listenersObj[eventName]);
 		});
