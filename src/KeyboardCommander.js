@@ -11,28 +11,41 @@ const ALL_EVENTS = [
 ];
 // Other constants
 const KEY_EVENT = 'keydown'; // Note that keyPress acts different and doesn't trigger for some keys
+const KEY_UP_EVENT = 'keyup';
 
 class KeyboardCommander extends Observer {
 	constructor(keyCommandMapping = {}, options = {}) {
 		super();
+		const {
+			autoMount = true,
+			triggerOnRepeat = false,
+			document = window.document,
+		} = options;
+		// an id is useful for debugging - identifying unique instantiations
+		this.id = Math.round(Math.random() * 99999);
+		// Do we want an individual command to fire off if the key is held down
+		this.triggerOnRepeat = Boolean(triggerOnRepeat);
 		// this.state = options.state || 'default';
 		this.mapping = {};
 		this.setMapping(keyCommandMapping);
-		this.document = options.document || window?.document || null;
-		if (!this.document?.addEventListener) throw error('document with addEventListener is required');
+		this.document = document;
+		if (!this.document.addEventListener) throw new Error('document with addEventListener is required');
+		this.keysDown = {};
+		this.commandsDown = {};
 		this.keyPressListener = (event) => this.handleKeyPress(event);
+		this.keyUpListener = (event) => this.handleKeyUp(event);
 		// Set up event hooks, if provided
 		this.setupEventListeners(options);
 		// Advanced settings
 		this.nodeNamesDontTrigger = ['TEXTAREA', 'INPUT'];
 		this.nodeNamesAllowDefault = ['TEXTAREA', 'INPUT']; // redundant since they won't get triggered
 		// Start it up - default is to automatically mount
-		if (options.autoMount === undefined || options.autoMount) this.mount();
+		if (autoMount) this.mount();
 	}
 
 	setMapping(mappingParam = {}) {
 		if (typeof mappingParam !== 'object') throw new Error('Invalid type for mapping param');
-		this.mapping = {...mappingParam};
+		this.mapping = { ...mappingParam };
 		this.trigger(MAPPING_EVENT);
 		return this.mapping;
 	}
@@ -57,11 +70,13 @@ class KeyboardCommander extends Observer {
 
 	mount() {
 		this.document.addEventListener(KEY_EVENT, this.keyPressListener);
+		this.document.addEventListener(KEY_UP_EVENT, this.keyUpListener);
 		this.trigger(MOUNT_EVENT);
 	}
 
 	unmount() {
 		this.document.removeEventListener(KEY_EVENT, this.keyPressListener);
+		this.document.removeEventListener(KEY_UP_EVENT, this.keyUpListener);
 		this.trigger(UNMOUNT_EVENT);
 	}
 
@@ -74,7 +89,20 @@ class KeyboardCommander extends Observer {
 		if (!this.nodeNamesAllowDefault.includes(nodeName)) {
 			event.preventDefault();
 		}
-		this.triggerKey(key, details);
+		if (!repeat) {
+			const command = this.mapping[key];
+			this.keysDown[key] = true;
+			if (command) this.commandsDown[command] = true;
+		}
+		const trigger = (!repeat || this.triggerOnRepeat);
+		if (trigger) this.triggerKey(key, details);
+	}
+
+	handleKeyUp(event) {
+		const { key } = event;
+		const command = this.mapping[key];
+		this.keysDown[key] = false;
+		if (command) this.commandsDown[command] = false;
 	}
 
 	setupEventListeners(listenersObj = {}) {
@@ -93,7 +121,7 @@ class KeyboardCommander extends Observer {
 		this.trigger(MISSING_COMMAND_EVENT, key);
 	}
 
-	triggerKey(key, details = {}) {
+	triggerKey(key /* , details = {} */) {
 		const command = this.mapping[key];
 		// TODO: Look at details and handle them in the mapping
 		if (command) {
@@ -111,6 +139,22 @@ class KeyboardCommander extends Observer {
 		const uniqueCommands = new Set();
 		this.getKeysMapped().forEach((key) => uniqueCommands.add(this.mapping[key]));
 		return Array.from(uniqueCommands);
+	}
+
+	isKeyDown(key) {
+		return this.keysDown[key];
+	}
+
+	isCommandDown(command) {
+		return this.commandsDown[command];
+	}
+
+	getKeysDown() {
+		return Object.keys(this.keysDown).filter((key) => this.keysDown[key]);
+	}
+
+	getCommandsDown() {
+		return Object.keys(this.commandsDown).filter((key) => this.commandsDown[key]);
 	}
 }
 

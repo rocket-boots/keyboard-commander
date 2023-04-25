@@ -3,7 +3,7 @@
 
 ## How to Use
 
-1. Bring the library into your project: `npm install github:rocket-boots/keyboard-commander`
+1. Bring the library into your project: `npm install github:rocket-boots/keyboard-commander` (optionally add a `#tag` to the end, e.g., `#v0.2.0`)
 2. Import into one of your components
     ```js
 	import { KeyboardCommander } from 'keyboard-commander';
@@ -54,15 +54,15 @@
 ### Information
 * `getKeysMapped` returns an array of the keys that are currently mapped
 * `getCommands` returns an array of the commands that are currently mapped
+* `isKeyDown` true/false whether or not the key is being held down
+* `isCommandDown` true/false whether the command is held down; can be used instead of triggers
 
 ### Lifecycle
-* `mount` adds the event listener to the document
-* `unmount` removes the event listener
+* `mount` adds the event listeners to the document
+* `unmount` removes the event listeners
 
 
 ## An Example
 
 * Try it out: http://rocket-boots.github.io/keyboard-commander/
 * Code: https://github.com/rocket-boots/keyboard-commander/blob/main/index.html
-
-

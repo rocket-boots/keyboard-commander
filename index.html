@@ -21,23 +21,23 @@
 				width: 40%;
 			}
 			#mapping {
-				width: 20em;
-				height: 20em;
+				width: 22em;
+				height: 22em;
 				border: solid 1px white;
 				background: black;
 				color: white;
 				font-family: 'Courier New', Courier, monospace;
 			}
-			#command {
+			.command {
 				padding: 1em;
-				font-size: 300%;
+				font-size: 200%;
 				background: rgba(255, 255, 255, 0.5);
 			}
 		</style>
 	</head>
 	<body>
 		<main>
-			<h1>KeyBoardCommander Example</h1>
+			<h1>KeyboardCommander Example</h1>
 			<div class="sections">
 				<section>
 					<h1>Key-Command Mapping</h1>
@@ -46,16 +46,26 @@
 					</p>
 					<textarea id="mapping">{
 						"w": "go up",
+						"W": "go up",
 						"a": "go left",
 						"s": "go down",
 						"d": "go right",
-						"Tab": "open inventory"
+						"Tab": "open inventory",
+						"Shift": "sprint"
 					}
 					</textarea>
+					<div>
+						<input type="checkbox" checked="checked" id="repeat-checkbox" />
+						<label for="repeat-checkbox">Trigger on Repeat</label>
+					</div>
 				</section>
 				<section>
-					<h1>Last Key Pressed</h1>
-					<div id="command">None</div>
+					<h1>Last Command</h1>
+					<div id="command" class="command">None</div>
+					<h1>Keys Down</h1>
+					<div id="keys-down" class="command">None</div>
+					<h1>Commands Down</h1>
+					<div id="commands-down" class="command">None</div>
 				</section>
 				<section>
 					<h1>Commands</h1>
@@ -64,6 +74,9 @@
 			</div>
 		</main>
 		<script type="module">
+			let kbCommander;
+			let lastCommand = '';
+			let counter = 0;
 			// UI Functions
 			function getMapping() {
 				const json = document.getElementById('mapping').value;
@@ -76,8 +89,11 @@
 				}
 			}
 
-			function displayCommand(text) {
-				document.getElementById('command').innerText = text;
+			function displayCommand(command) {
+				if (command === lastCommand) counter += 1;
+				else counter = 1;
+				lastCommand = command;
+				document.getElementById('command').innerText = `${command} x${counter}`;
 			}
 
 			function displayCommands() {
@@ -95,22 +111,38 @@
 
 			// Setup the commander
 			import KeyboardCommander from './src/KeyboardCommander.js';
-			const kbCommander = new KeyboardCommander(
-				getMapping(),
-				{
-					// Hooks
-					command: displayCommand,
-					missingCommand: (key) => displayCommand(`Missing command for key ${key}`),
-				},
-			);
+
+			function makeKbCommander() {
+				if (kbCommander) kbCommander.unmount();
+				kbCommander = new KeyboardCommander(
+					getMapping(),
+					{
+						triggerOnRepeat: document.getElementById('repeat-checkbox').checked,
+						// Hooks
+						command: displayCommand,
+						missingCommand: (key) => displayCommand(`Missing command for key ${key}`),
+					},
+				);
+				// Expose to window for testing
+				window.kbCommander = kbCommander;
+			}
+
+			function loop() {
+				const keys = kbCommander.getKeysDown();
+				const commands = kbCommander.getCommandsDown();
+				document.getElementById('keys-down').innerText = (!keys.length) ? 'None' : keys.join(', ');
+				document.getElementById('commands-down').innerText = (!commands.length) ? 'None' : commands.join(', ');
+				requestAnimationFrame(loop);
+			}
 
 			// Setup UI
 			window.onload = () => {
+				makeKbCommander();
 				document.getElementById('mapping').addEventListener('blur', resetMapping);
+				document.getElementById('repeat-checkbox').addEventListener('change', makeKbCommander);
 				displayCommands();
+				loop();
 			};
-			// Expose to window for testing
-			window.kbCommander = kbCommander;
 		</script>
 	</body>
 </html>
