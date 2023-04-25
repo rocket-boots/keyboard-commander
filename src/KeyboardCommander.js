@@ -156,6 +156,11 @@ class KeyboardCommander extends Observer {
 	getCommandsDown() {
 		return Object.keys(this.commandsDown).filter((key) => this.commandsDown[key]);
 	}
+
+	clearDown() {
+		this.keysDown = {};
+		this.commandsDown = {};
+	}
 }
 
 export default KeyboardCommander;

@@ -66,3 +66,7 @@
 
 * Try it out: http://rocket-boots.github.io/keyboard-commander/
 * Code: https://github.com/rocket-boots/keyboard-commander/blob/main/index.html
+
+## Known Issues
+
+* When hitting keys fast together with Shift, there's the possibility that a key gets stuck in the key-down (`true`) state.
